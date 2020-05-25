@@ -1,0 +1,2 @@
+#pyside2
+#PyGObject==3.30.4
