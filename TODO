@@ -1,0 +1,33 @@
+- Implement sliders for image settings
+- Make QML load values available from the `Settings` classes
+- Implement settings screens:
+    - Base settings: 
+        - Resolution: Dropdown
+        - FPS: Dropdown depends on resolution
+        - Orientation: Dropdown
+    - Advanced Settings:
+        - Stabilisation: Switch
+        - Shutter speed: Dropdown
+        - Exposure mode: Dropdown
+        - Metering mode: Dropdown
+    - Encoder Settings:
+        - Keyframe interval: Slider
+        - Bitrate: Slider, min == auto
+        - QP: Slider
+        - Preview Encoded: Switch
+    - Streaming Settings:
+        - Streaming Protocol: Dropdown
+        - Streaming Target: URL
+        - Stream key: Text
+    - Recording Settings:
+        - Location: Text
+        - Split: Switch
+        - Split size: Text (Number)
+    - Audio Settings:
+        - Enabled: Switch
+        - Codec: Dropdown
+        - Bitrate: Dropdown
+        - Channels: Dropdown (Mono L, Mono R, Stereo)
+- Implement histogram
+- Implement audio Vu meters
+- Implement audio volume
