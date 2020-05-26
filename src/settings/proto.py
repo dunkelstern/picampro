@@ -39,7 +39,7 @@ class SettingsProto:
                 continue
             self._state[cls.__name__][key] = self.__dict__[key]
 
-    def state_changes(self, cls: class) -> List[str]:
+    def state_changes(self, cls) -> List[str]:
         """
         Return a list of changed instance variables since last call to ``store_state()``
 
