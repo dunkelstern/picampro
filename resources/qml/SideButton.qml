@@ -4,6 +4,7 @@ import QtGraphicalEffects 1.0
 Item {
     width: 120
     height: 120
+    
     property alias iconSource: icon.source
     property alias titleText: buttonText.text
     property alias colorbarColor: colorbar.color

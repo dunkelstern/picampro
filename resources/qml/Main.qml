@@ -5,9 +5,14 @@ import QtQuick.VirtualKeyboard 2.1
 Window {
     id: main
 
-    signal buttonPressed(string buttonID)
+    property Item activeSideBar
+    property Item activeBottomBar
+
+    signal setValue(string key, string value)
     signal stopVideoPreview()
     signal startVideoPreview()
+
+    // FIXME: Add button titles as properties to initialize at program start
 
     title: qsTr("PiCamPro")
     width: 1024
@@ -15,14 +20,9 @@ Window {
     color: "black"
     visible: true
 
-    property alias micButton: micButton
-    property alias streamButton: streamButton
-    property alias stopButton: stopButton
-    property alias recButton: recButton
-    property alias videoWindow: videoWindow
-
     SideButtonBar {
         id: sideBar
+        objectName: "main"
 
         anchors.top: parent.top
         anchors.bottom: parent.bottom
@@ -46,29 +46,27 @@ Window {
             "../icons/settings-technical.svg"
         ]
 
-        buttonColors: [
-            Constants.accentRed,
-            Constants.accentYellow,
-            Constants.accentGreen,
-            Constants.accentBlue,
-            Constants.accentViolet
-        ]
-
         onSideButtonClicked: {
             switch (buttonID) {
                 case 0:
                     // Show ISO selection overlay
-                    iso.state = "visible"
+                    main.activeSideBar = iso
+                    main.activeBottomBar = okDialogBar
                     break;
                 case 1:
                     // Show EV selection overlay
-                    ev.state = "visible"
+                    main.activeSideBar = ev
+                    main.activeBottomBar = okDialogBar
                     break;
                 case 2:
-                    // TODO: Show WB selection overlay
+                    // Show WB selection overlay
+                    main.activeSideBar = wb
+                    main.activeBottomBar = scrollableDialogBar
                     break;
                 case 3:
-                    // TODO: Show image settings overlay
+                    // Show image settings overlay
+                    main.activeSideBar = image
+                    main.activeBottomBar = scrollableDialogBar
                     break;
                 case 4:
                     // Stop Video preview
@@ -78,96 +76,185 @@ Window {
                 default:
                     break;
             }
+
+            main.activeSideBar.state = "visible"
+            main.activeBottomBar.state = "visible"
+            sideBar.state = "hidden"
+            bottomBar.state = "hidden"
         }
     }
 
     Rectangle {
         id: videoWindow
         color: Constants.bgColor
-        anchors.right: sideBar.left
         anchors.left: parent.left
         anchors.top: parent.top
+        width: parent.width - sideBar.width
         height: width / 16 * 9
     }
 
-    BottomButton {
-        id: micButton
-        anchors.top: videoWindow.bottom
-        anchors.right: sideBar.left
-        anchors.rightMargin: 2
-        anchors.bottom: parent.bottom
-        width: height
-        colorbarColor: Constants.accentBlue
-        titleText: qsTr("Mic")
-        iconSource: "../icons/mic.svg"
-        onActivated: main.buttonPressed("mic")
+    BottomButtonBar {
+        id: bottomBar
+
+        x: parent.width - sideBar.width - height * buttonTitles.length
+        y: parent.height - height
+        width: height * buttonTitles.length
+        height: parent.height - videoWindow.height
+
+        buttonTitles: [
+            "Rec",
+            "Stop",
+            "Stream",
+            "Mic"
+        ]
+
+        buttonIcons: [
+            "../icons/rec.svg",
+            "../icons/stop.svg",
+            "../icons/stream.svg",
+            "../icons/mic.svg"
+        ]
+
+        onBottomButtonClicked: {
+            switch(buttonID) {
+                case 0:
+                    main.setValue("rec", "true")
+                    break;
+                case 1:
+                    main.setValue("stop", "true")
+                    break;
+                case 2:
+                    main.setValue("stream", "true")
+                    break;
+                case 3:
+                    main.setValue("mic", "true")
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
-    BottomButton {
-        id: streamButton
-        anchors.top: videoWindow.bottom
-        anchors.right: micButton.left
-        anchors.rightMargin: 2
-        anchors.bottom: parent.bottom
-        width: height
-        colorbarColor: Constants.accentGreen
-        titleText: qsTr("Stream")
-        iconSource: "../icons/stream.svg"
-        onActivated: main.buttonPressed("stream")
+    BottomButtonBar {
+        id: okDialogBar
+
+        x: parent.width - sideBar.width - height * buttonTitles.length
+        y: parent.height - height
+        width: height * buttonTitles.length
+        height: parent.height - videoWindow.height
+
+        buttonTitles: [
+            "Ok"
+        ]
+
+        buttonIcons: [
+            "../icons/rec.svg" // FIXME: Ok icon
+        ]
+
+        onBottomButtonClicked: {
+            main.activeSideBar.state = "hidden"
+            main.activeBottomBar.state = "hidden"
+            bottomBar.state = "visible"
+            sideBar.state = "visible"
+        }
     }
 
-    BottomButton {
-        id: stopButton
-        anchors.top: videoWindow.bottom
-        anchors.right: streamButton.left
-        anchors.rightMargin: 2
-        anchors.bottom: parent.bottom
-        width: height
-        colorbarColor: Constants.accentYellow
-        titleText: qsTr("Stop")
-        iconSource: "../icons/stop.svg"
-        onActivated: main.buttonPressed("stop")
-    }
+    BottomButtonBar {
+        id: scrollableDialogBar
 
-    BottomButton {
-        id: recButton
-        anchors.top: videoWindow.bottom
-        anchors.right: stopButton.left
-        anchors.rightMargin: 2
-        anchors.bottom: parent.bottom
-        width: height
-        colorbarColor: Constants.accentRed
-        titleText: qsTr("Record")
-        iconSource: "../icons/rec.svg"
-        onActivated: main.buttonPressed("rec")
+        x: parent.width - sideBar.width - height * buttonTitles.length
+        y: parent.height - height
+        width: height * buttonTitles.length
+        height: parent.height - videoWindow.height
+
+        buttonTitles: [
+            "Up",
+            "Down",
+            "Ok"
+        ]
+
+        buttonIcons: [
+            "../icons/rec.svg", // FIXME: Up icon
+            "../icons/rec.svg", // FIXME: Down icon
+            "../icons/rec.svg"  // FIXME: Ok icon
+        ]
+
+        onBottomButtonClicked: {
+            switch(buttonID) {
+                case 0: // up
+                    main.activeSideBar.contentY -= parent.height / 5
+                    if (main.activeSideBar.contentY < 0) {
+                        main.activeSideBar.contentY = 0
+                    }
+                    break;
+                case 1: // down
+                    main.activeSideBar.contentY += parent.height / 5
+                    if (main.activeSideBar.contentY > parent.height / 5 * main.activeSideBar.buttonTitles.length - parent.height) {
+                        main.activeSideBar.contentY = parent.height / 5 * main.activeSideBar.buttonTitles.length - parent.height
+                    }
+                    break;
+                case 2: // ok
+                    main.activeSideBar.state = "hidden"
+                    main.activeBottomBar.state = "hidden"
+                    bottomBar.state = "visible"
+                    sideBar.state = "visible"
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     ISOOverlay {
         id: iso
+        objectName: "iso"
         width: sideBar.width
 
         onSetISO: {
             if (value == 0) {
-                main.buttonPressed("iso_auto")
-                sideBar.button1.titleText = qsTr("Auto")
+                main.setValue("iso", "auto")
+                sideBar.buttons.itemAt(0).titleText = qsTr("Auto")
             } else {
-                main.buttonPressed("iso_" + value.toString())
-                sideBar.button1.titleText = value.toString()
+                main.setValue("iso", value.toString())
+                sideBar.buttons.itemAt(0).titleText = value.toString()
             }
-            iso.state = "hidden"
         }
     }
 
     EVOverlay {
         id: ev
+        objectName: "ev"
         width: sideBar.width
 
         onSetEV: {
-            main.buttonPressed("ev_" + value.toString())
-            sideBar.button2.titleText = (value > 0 ? "+" : "") + value.toString() + ' EV'
-            ev.state = "hidden"
+            main.setValue("ev", value.toString())
+            sideBar.buttons.itemAt(1).titleText = (value > 0 ? "+" : "") + value.toString() + ' EV'
         }
     }
+
+    WBOverlay {
+        id: wb
+        objectName: "wb"
+        width: sideBar.width
+
+        onSetWB: {
+            main.setValue('wb', value.toLowerCase())
+            sideBar.buttons.itemAt(2).titleText = value
+            sideBar.buttons.itemAt(2).iconSource = "../icons/wb-" + value.toLowerCase() + '.svg'
+        }
+    }
+
+    ImageOverlay {
+        id: image
+        objectName: "image"
+        width: sideBar.width
+
+        onSetValue: {
+            console.log(key, value)
+            main.setValue(key, value.toString())
+        }
+    }
+
 
     Timer {
         id: timer
@@ -186,8 +273,10 @@ Window {
     Component.onCompleted: {
         // Delay starting of video preview a bit as the event handler may not be attached
         // at load time yet
-        iso.state = 'hidden'
-        ev.state = 'hidden'
-        timer.setTimeout(main.startVideoPreview, 500)
+        timer.setTimeout(function() {
+            main.startVideoPreview()
+            bottomBar.state = 'visible'
+            sideBar.state = 'visible'
+        }, 500)
     }
 }

@@ -1,8 +1,7 @@
-
 import QtQuick 2.11
 
 UnifiedSideButtonBar {
-    id: container
+    id: ev
 
     signal setEV(int value)
 
@@ -43,29 +42,4 @@ UnifiedSideButtonBar {
                 break;
         }
     }
-
-    states: [
-        State {
-            name: "hidden"
-            PropertyChanges {
-                target: ev
-                x: parent.width
-            }
-        },
-        State {
-            name: "visible"
-            PropertyChanges {
-                target: ev
-                x: parent.width - width
-            }
-        }
-    ]
-
-    transitions: [
-        Transition {
-            NumberAnimation {
-                properties: "x"
-            }
-        }
-    ]
 }

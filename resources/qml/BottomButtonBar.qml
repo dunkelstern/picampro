@@ -1,9 +1,9 @@
 import QtQuick 2.11
 
-Flickable {
+Item {
     id: container
 
-    signal sideButtonClicked(int buttonID)
+    signal bottomButtonClicked(int buttonID)
 
     property alias buttons: buttons
 
@@ -25,28 +25,23 @@ Flickable {
 
     property var buttonColors: Constants.accentColors
 
-    contentHeight: width * buttonTitles.length
-    contentWidth: width
-    width: parent.width
-    height: parent.height
-    clip: true
-
-    Column {
+    Row {
         spacing: 2
         anchors.top: parent.top
         anchors.right: parent.right
-        width: container.height / 5 // fixed height to allow for use in flickable
+        width: parent.height * buttonTitles.length
+        height: parent.height
 
         Repeater {
             id: buttons
             model: buttonTitles
-            SideButton {
-                width: parent.width
-                height: width - 2
+            BottomButton {
+                width: height - 2
+                height: parent.height                
                 colorbarColor: buttonColors[index]
                 titleText: modelData
                 iconSource: buttonIcons[index]
-                onActivated: sideButtonClicked(index)
+                onActivated: bottomButtonClicked(index)
             }
         }
     }
@@ -56,14 +51,14 @@ Flickable {
             name: "hidden"
             PropertyChanges {
                 target: container
-                x: parent.width
+                y: parent.height
             }
         },
         State {
             name: "visible"
             PropertyChanges {
                 target: container
-                x: parent.width - width
+                y: parent.height - height
             }
         }
     ]
@@ -71,7 +66,7 @@ Flickable {
     transitions: [
         Transition {
             NumberAnimation {
-                properties: "x"
+                properties: "y"
             }
         }
     ]

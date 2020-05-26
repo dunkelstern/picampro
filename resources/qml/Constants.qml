@@ -12,4 +12,12 @@ QtObject {
     readonly property color btnBackgroundColor: "#171717"
     readonly property color btnTextColor: "#5c5c5c"
     readonly property color iconColor: "#ffffff"
+
+    readonly property var accentColors: [
+        accentRed,
+        accentYellow,
+        accentGreen,
+        accentBlue,
+        accentViolet
+    ]
 }

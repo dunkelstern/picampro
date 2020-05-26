@@ -42,29 +42,4 @@ UnifiedSideButtonBar {
                 break;
         }
     }
-
-    states: [
-        State {
-            name: "hidden"
-            PropertyChanges {
-                target: iso
-                x: parent.width
-            }
-        },
-        State {
-            name: "visible"
-            PropertyChanges {
-                target: iso
-                x: parent.width - width
-            }
-        }
-    ]
-
-    transitions: [
-        Transition {
-            NumberAnimation {
-                properties: "x"
-            }
-        }
-    ]
 }
