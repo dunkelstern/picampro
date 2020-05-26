@@ -26,7 +26,7 @@ class SettingsProto:
         self.dirty_values[self.__class__.__name__].add(attr)
         super().__setattr__(attr, value)
 
-    def store_state(self, cls: class) -> None:
+    def store_state(self, cls) -> None:
         """
         Store a snapshot of the current state of instance variables to avoid re-setting
         values that have not been changed between calls to ``apply()``
@@ -39,7 +39,7 @@ class SettingsProto:
                 continue
             self._state[cls.__name__][key] = self.__dict__[key]
 
-    def state_changes(self, cls: class) -> List[str]:
+    def state_changes(self, cls) -> List[str]:
         """
         Return a list of changed instance variables since last call to ``store_state()``
 

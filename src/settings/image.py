@@ -66,7 +66,6 @@ class ImageSettings(SettingsProto):
         
     def apply(self, gst_state: Pipeline):
         changes = self.state_changes(ImageSettings)
-        print(changes)
 
         if 'iso' in changes:
             gst_state.video_source.set_property('iso', ImageSettings.ISOS[self.iso])
