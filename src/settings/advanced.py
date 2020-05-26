@@ -62,7 +62,7 @@ class AdvancedSettings(BaseSettings):
                     )
                 )
 
-        self.dirty_values[self.__class__.__name__] = {}
+        self.dirty_values[self.__class__.__name__] = set()
         return True
 
     def parse(self, key: str, value: str):
