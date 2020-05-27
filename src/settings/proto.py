@@ -39,6 +39,13 @@ class SettingsProto:
                 continue
             self._state[cls.__name__][key] = self.__dict__[key]
 
+    def remove_state(self) -> None:
+        """
+        Remove all stored state, used when the pipeline has to be restarted so we get all
+        settings again
+        """
+        self._state = {}
+
     def state_changes(self, cls) -> List[str]:
         """
         Return a list of changed instance variables since last call to ``store_state()``
