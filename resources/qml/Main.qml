@@ -9,6 +9,7 @@ Window {
     property Item activeBottomBar
 
     signal setValue(string key, string value)
+    signal buttonPressed(string key)
     signal stopVideoPreview()
     signal startVideoPreview()
 
@@ -70,6 +71,8 @@ Window {
                     break;
                 case 4:
                     // Stop Video preview
+                    main.activeSideBar = null
+                    main.activeBottomBar = null
                     main.stopVideoPreview()
                     // TODO: Show settings screen
                     break;        
@@ -77,10 +80,12 @@ Window {
                     break;
             }
 
-            main.activeSideBar.state = "visible"
-            main.activeBottomBar.state = "visible"
-            sideBar.state = "hidden"
-            bottomBar.state = "hidden"
+            if (main.activeSideBar) {
+                main.activeSideBar.state = "visible"
+                main.activeBottomBar.state = "visible"
+                sideBar.state = "hidden"
+                bottomBar.state = "hidden"
+            }
         }
     }
 
@@ -118,16 +123,16 @@ Window {
         onBottomButtonClicked: {
             switch(buttonID) {
                 case 0:
-                    main.setValue("rec", "true")
+                    main.buttonPressed("rec")
                     break;
                 case 1:
-                    main.setValue("stop", "true")
+                    main.buttonPressed("stop")
                     break;
                 case 2:
-                    main.setValue("stream", "true")
+                    main.buttonPressed("stream")
                     break;
                 case 3:
-                    main.setValue("mic", "true")
+                    main.buttonPressed("mic")
                     break;
                 default:
                     break;

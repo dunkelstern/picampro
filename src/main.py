@@ -21,6 +21,19 @@ def set_value(key, value):
     settings.save()
     settings.apply(pipeline)
 
+
+@Slot(str)
+def button_pressed(key):
+    print('button', key)
+    if key == 'stop':
+        pipeline.preview()
+    elif key == 'rec':
+        pipeline.start_recording()
+    elif key == 'stream':
+        pipeline.start_streaming()
+    elif key == 'mic':
+        pass
+
 @Slot()
 def start_preview():
     print('start preview')
@@ -43,6 +56,7 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     engine.rootObjects()[0].setValue.connect(set_value)
+    engine.rootObjects()[0].buttonPressed.connect(button_pressed)
     engine.rootObjects()[0].stopVideoPreview.connect(stop_preview)
     engine.rootObjects()[0].startVideoPreview.connect(start_preview)
 
