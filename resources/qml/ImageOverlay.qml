@@ -1,9 +1,15 @@
 import QtQuick 2.11
+import QtQuick.Controls 2.4
 
 SideButtonBar {
     id: wb
 
-    signal setValue(int value)
+    signal setValue(string key, int value)
+
+    property IconSlider slider
+    property var currentValues
+    property var ranges
+    property string activeValue
 
     anchors.top: parent.top
     anchors.bottom: parent.bottom
@@ -41,7 +47,32 @@ SideButtonBar {
 
     buttonColors: makeButtonColors(buttonTitles.length)
 
+    function sliderMoved() {
+        setValue(activeValue, slider.value)
+        currentValues[activeValue] = slider.value
+    }
+
     onSideButtonClicked: {
-        // TODO: Show slider
+        var buttonMapping = [
+            'sharpness',
+            'contrast',
+            'brightness',
+            'saturation',
+            'awb_gain_red',
+            'awb_gain_blue',
+            'drc'
+        ]
+
+        activeValue = buttonMapping[buttonID]
+
+        // Show and setup slider
+        slider.from = ranges[activeValue][0]
+        slider.to = ranges[activeValue][1]
+        slider.value = currentValues[activeValue]
+        slider.iconSource = '../icons/img-' + activeValue +  '.svg'
+        slider.visible = true
+
+        slider.onMoved.disconnect(sliderMoved)
+        slider.onMoved.connect(sliderMoved)
     }
 }

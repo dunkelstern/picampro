@@ -1,12 +1,14 @@
 import QtQuick 2.11
 import QtQuick.Window 2.11
 import QtQuick.VirtualKeyboard 2.1
+import QtQuick.Controls 2.4
 
 Window {
     id: main
 
-    property Item activeSideBar
-    property Item activeBottomBar
+    property Item activeSideBar: sideBar
+    property Item activeBottomBar: bottomBar
+    property alias slider: slider
 
     signal setValue(string key, string value)
     signal buttonPressed(string key)
@@ -71,16 +73,16 @@ Window {
                     break;
                 case 4:
                     // Stop Video preview
-                    main.activeSideBar = null
-                    main.activeBottomBar = null
+                    main.activeSideBar = sideBar
+                    main.activeBottomBar = bottomBar
                     main.stopVideoPreview()
                     // TODO: Show settings screen
-                    break;        
+                    break;
                 default:
                     break;
             }
 
-            if (main.activeSideBar) {
+            if (main.activeSideBar != sideBar) {
                 main.activeSideBar.state = "visible"
                 main.activeBottomBar.state = "visible"
                 sideBar.state = "hidden"
@@ -159,8 +161,11 @@ Window {
         onBottomButtonClicked: {
             main.activeSideBar.state = "hidden"
             main.activeBottomBar.state = "hidden"
+            main.activeSideBar = sideBar
+            main.activeBottomBar = bottomBar
             bottomBar.state = "visible"
             sideBar.state = "visible"
+            slider.visible = false
         }
     }
 
@@ -201,8 +206,11 @@ Window {
                 case 2: // ok
                     main.activeSideBar.state = "hidden"
                     main.activeBottomBar.state = "hidden"
+                    main.activeSideBar = sideBar
+                    main.activeBottomBar = bottomBar
                     bottomBar.state = "visible"
                     sideBar.state = "visible"
+                    slider.visible = false
                     break;
                 default:
                     break;
@@ -255,11 +263,43 @@ Window {
         width: sideBar.width
 
         onSetValue: {
-            console.log(key, value)
             main.setValue(key, value.toString())
+        }
+
+        onStateChanged: {
+            image.slider = main.slider
+
+            // FIXME: get from python code
+            currentValues = {
+                sharpness: 0.0,
+                contrast: 0.0,
+                brightness: 50.0,
+                saturation: 0.0,
+                awb_gain_red: 0.0,
+                awb_gain_blue: 0.0,
+                drc: 0.0
+            }
+
+            ranges = {
+                sharpness: [-100.0, 100.0],
+                contrast: [-100.0, 100.0],
+                brightness: [0.0, 100.0],
+                saturation: [-100.0, 100.0],
+                awb_gain_red: [0.0, 8.0],
+                awb_gain_blue: [0.0, 8.0],
+                drc: [0.0, 3.0]
+            }
         }
     }
 
+    IconSlider {
+        id: slider
+        x: 0
+        y: parent.height - height
+        width: parent.width - main.activeBottomBar.width - sideBar.width
+        height: parent.height - videoWindow.height
+        visible: false
+    }
 
     Timer {
         id: timer
