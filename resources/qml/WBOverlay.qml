@@ -28,6 +28,7 @@ SideButtonBar {
         "../icons/wb-manual.svg",
         "../icons/wb-auto.svg",
         "../icons/wb-sunlight.svg",
+        "../icons/wb-cloudy.svg",
         "../icons/wb-shade.svg",
         "../icons/wb-tungsten.svg",
         "../icons/wb-fluorescent.svg",
@@ -44,10 +45,11 @@ SideButtonBar {
         Constants.accentGreen,
         Constants.accentGreen,
         Constants.accentGreen,
+        Constants.accentGreen,
         Constants.accentGreen
     ]
 
-    onButtonClicked: {
+    onSideButtonClicked: {
         setWB(buttonTitles[buttonID])
     }
 }
