@@ -1,6 +1,6 @@
 import QtQuick 2.11
 
-UnifiedSideButtonBar {
+SideButtonBar {
     id: wb
 
     signal setWB(string value)
@@ -24,8 +24,28 @@ UnifiedSideButtonBar {
         "Horizon"
     ]
 
-    buttonIcon:  "../icons/wb-shade.svg"
-    buttonColor: Constants.accentGreen
+    buttonIcons:  [
+        "../icons/wb-manual.svg",
+        "../icons/wb-auto.svg",
+        "../icons/wb-sunlight.svg",
+        "../icons/wb-shade.svg",
+        "../icons/wb-tungsten.svg",
+        "../icons/wb-fluorescent.svg",
+        "../icons/wb-incandescent.svg",
+        "../icons/wb-flash.svg",
+        "../icons/wb-horizon.svg"
+    ]
+    buttonColors: [
+        Constants.accentGreen,
+        Constants.accentGreen,
+        Constants.accentGreen,
+        Constants.accentGreen,
+        Constants.accentGreen,
+        Constants.accentGreen,
+        Constants.accentGreen,
+        Constants.accentGreen,
+        Constants.accentGreen
+    ]
 
     onButtonClicked: {
         setWB(buttonTitles[buttonID])

@@ -27,14 +27,14 @@ SideButtonBar {
         "DRC"
     ]
 
-    buttonIcons: [ // TODO: Icons
-        "../icons/stop.svg",
-        "../icons/stop.svg",
-        "../icons/stop.svg",
-        "../icons/stop.svg",
-        "../icons/stop.svg",
-        "../icons/stop.svg",
-        "../icons/stop.svg",
+    buttonIcons: [
+        "../icons/image-sharpness.svg",
+        "../icons/image-contrast.svg",
+        "../icons/image-brightness.svg",
+        "../icons/image-saturation.svg",
+        "../icons/image-wb-gain-red.svg",
+        "../icons/image-wb-gain-blue.svg",
+        "../icons/image-drc.svg",
     ]
 
     function makeButtonColors(num) {

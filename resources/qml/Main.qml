@@ -36,7 +36,7 @@ Window {
         buttonTitles: [
             "Auto",
             "0 EV",
-            "Shade",
+            "Auto",
             "Image",
             "Settings"
         ]
@@ -44,7 +44,7 @@ Window {
         buttonIcons: [
             "../icons/ISO.svg",
             "../icons/EV.svg",
-            "../icons/wb-shade.svg",
+            "../icons/wb-auto.svg",
             "../icons/settings-image.svg",
             "../icons/settings-technical.svg"
         ]
@@ -155,7 +155,7 @@ Window {
         ]
 
         buttonIcons: [
-            "../icons/rec.svg" // FIXME: Ok icon
+            "../icons/ok.svg"
         ]
 
         onBottomButtonClicked: {
@@ -184,9 +184,9 @@ Window {
         ]
 
         buttonIcons: [
-            "../icons/rec.svg", // FIXME: Up icon
-            "../icons/rec.svg", // FIXME: Down icon
-            "../icons/rec.svg"  // FIXME: Ok icon
+            "../icons/up.svg",
+            "../icons/down.svg",
+            "../icons/ok.svg"
         ]
 
         onBottomButtonClicked: {
