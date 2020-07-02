@@ -1,5 +1,3 @@
-- Implement sliders for image settings
-- Make QML load values available from the `Settings` classes
 - Implement settings screens:
     - Base settings: 
         - Resolution: Dropdown
