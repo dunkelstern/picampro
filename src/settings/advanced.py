@@ -1,3 +1,5 @@
+from typing import Dict, Tuple, Union, List
+
 from .base import BaseSettings
 from pipeline import Pipeline
 
@@ -31,6 +33,14 @@ class AdvancedSettings(BaseSettings):
     exposure_mode = 'auto'
     metering_mode = 'average' 
 
+    @classmethod
+    def value_ranges(cls) -> Dict[str, Union[Tuple[float, float], List[str]]]:
+        return {
+            'shutter_speed': (0.0, 6000000.0),
+            'exposure_mode': list(AdvancedSettings.EXPOSURE_MODES.keys()),
+            'metering_mode': list(AdvancedSettings.METERING_MODES.keys())
+        }
+
     def validate(self):
         if self.__class__.__name__ not in self.dirty_values:
             return super().validate()
@@ -45,22 +55,16 @@ class AdvancedSettings(BaseSettings):
                         1.0 / self.fps * 1000000
                     )
                 )
-        if 'exposure_mode' in self.dirty_values[self.__class__.__name__]:
-            if self.exposure_mode not in AdvancedSettings.EXPOSURE_MODES:
-                raise ValueError(
-                    "Invalid exposure mode {}, valid are {}".format(
-                        self.exposure_mode,
-                        ', '.join(AdvancedSettings.EXPOSURE_MODES)
-                    )
-                )
-        if 'metering_mode' in self.dirty_values[self.__class__.__name__]:
-            if self.metering_mode not in AdvancedSettings.METERING_MODES:
-                raise ValueError(
-                    "Invalid metering mode {}, valid are {}".format(
-                        self.metering_mode,
-                        ', '.join(AdvancedSettings.METERING_MODES)
-                    )
-                )
+
+        for attr, rng in AdvancedSettings.value_ranges().items():
+            value = getattr(self, attr)
+            if isinstance(rng, tuple):
+                rng_min, rng_max = rng
+                if value > rng_max or value < rng_min:
+                    raise ValueError('Attribute {} out of range: {} < {} < {}'.format(attr, rng_min, value, rng_max))
+            elif isinstance(rng, list):
+                if value not in rng:
+                    raise ValueError('Attribute {} has invalid value {}, possible: {}'.format(attr, value, ', '.join(rng)))
 
         self.dirty_values[self.__class__.__name__] = set()
         return True

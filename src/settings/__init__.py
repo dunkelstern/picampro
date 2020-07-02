@@ -25,7 +25,7 @@ class Settings(AdvancedSettings, ImageSettings, EncoderSettings, StreamingSettin
         self.validate()
 
         for key, value in self.__dict__.items():
-            if key.startswith('_') or callable(value) or key in ('settings_instance', 'dirty_values'):
+            if key.startswith('_') or callable(value) or key in ('settings_instance', 'dirty_values', 'value_ranges'):
                 continue
             section = 'unknown'
             for klass in self.__class__.__mro__:

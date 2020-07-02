@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Dict, Any, Tuple, Union
+
 from pipeline import Pipeline
 
 
@@ -65,6 +66,47 @@ class SettingsProto:
             if self._state[cls.__name__][key] != self.__dict__[key]:
                 result.append(key)
         return result
+
+    def serialize(self) -> Dict[str, Any]:
+        """
+        Serialize settings into a dict.
+
+        This is used primarily to send the settings over to the UI
+
+        :returns: Dictionary with all settings serialized
+        """
+        result: Dict[str, Dict[str, Any]] = {}
+        for key, value in self.__dict__.items():
+            if key.startswith('_') or callable(value) or key == key.upper() or key in ('settings_instance', 'dirty_values', 'value_ranges'):
+                continue
+            classes = list(self.__class__.__mro__)
+            classes.reverse()
+            for c in classes:
+                if c.__name__ in ('Settings', 'object', 'SettingsProto'):
+                    continue
+                if hasattr(c, key):
+                    cls = c.__name__.replace('Settings', '').lower()
+                    rng = c.value_ranges()
+                    break;
+            if cls == 'proto':
+                continue
+            if cls not in result:
+                result[cls] = {}
+                for rng_key, rng_value in rng.items():
+                    if isinstance(rng_value, tuple):
+                        rng[rng_key] = list(rng_value)
+                result[cls]['_ranges'] = rng
+            print(cls, key, self.__dict__[key])
+            result[cls][key] = self.__dict__[key]
+        return result
+
+    @classmethod
+    def value_ranges(cls) -> Dict[str, Union[Tuple[float, float], List[str]]]:
+        """
+        Returns the allowed ranges for each attribute that has to be
+        range-checked.
+        """
+        return {}
 
     def validate(self) -> bool:
         """

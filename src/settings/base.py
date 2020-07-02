@@ -1,3 +1,5 @@
+from typing import Dict, Tuple, Union, List
+
 from .proto import SettingsProto
 from pipeline import Pipeline
 
@@ -34,6 +36,14 @@ class BaseSettings(SettingsProto):
     fps = 30
     orientation = 'normal'
 
+    @classmethod
+    def value_ranges(cls) -> Dict[str, Union[Tuple[float, float], List[str]]]:
+        return {
+            'resolution':  BaseSettings.RESOLUTIONS,
+            'fps':         (1.0, 90.0),
+            'orientation': list(BaseSettings.ORIENTATIONS.keys()),
+        }
+
     def validate(self):
         if self.__class__.__name__ not in self.dirty_values:
             return super().validate()
@@ -60,11 +70,11 @@ class BaseSettings(SettingsProto):
         return super().validate()
 
     def parse(self, key: str, value: str):
-        if key == 'basic:resolution':
+        if key == 'base:resolution':
             self.resolution = value
-        elif key == 'basic:fps':
+        elif key == 'base:fps':
             self.fps = int(value)
-        elif key == 'basic:orientation':
+        elif key == 'base:orientation':
             self.orientation = value
         super().parse(key, value)
     

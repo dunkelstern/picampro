@@ -15,9 +15,9 @@ pipeline = None
 
 
 @Slot(str, str)
-def set_value(key, value):
-    print(key, value)
-    settings.parse(key, value)
+def set_value(area, key, value):
+    print(area, key, value)
+    settings.parse("{}:{}".format(area, key), value)
     settings.save()
     settings.apply(pipeline)
 
@@ -55,9 +55,15 @@ if __name__ == "__main__":
     if not engine.rootObjects():
         sys.exit(-1)
 
-    engine.rootObjects()[0].setValue.connect(set_value)
-    engine.rootObjects()[0].buttonPressed.connect(button_pressed)
-    engine.rootObjects()[0].stopVideoPreview.connect(stop_preview)
-    engine.rootObjects()[0].startVideoPreview.connect(start_preview)
+    root = engine.rootObjects()[0]
+
+    # Connect slots
+    root.setValue.connect(set_value)
+    root.buttonPressed.connect(button_pressed)
+    root.stopVideoPreview.connect(stop_preview)
+    root.startVideoPreview.connect(start_preview)
+    
+    # Transfer settings over
+    root.setProperty('modelData', settings.serialize())
 
     sys.exit(app.exec_())

@@ -6,11 +6,13 @@ import QtQuick.Controls 2.4
 Window {
     id: main
 
+    property var modelData: {}
+
     property Item activeSideBar: sideBar
     property Item activeBottomBar: bottomBar
     property alias slider: slider
 
-    signal setValue(string key, string value)
+    signal setValue(string area, string key, string value)
     signal buttonPressed(string key)
     signal stopVideoPreview()
     signal startVideoPreview()
@@ -22,6 +24,13 @@ Window {
     height: 600
     color: "black"
     visible: true
+
+    onModelDataChanged: {
+        if (main.modelData === undefined) {
+            return
+        }
+        sideBar.stateChanged(null)
+    }
 
     SideButtonBar {
         id: sideBar
@@ -88,6 +97,16 @@ Window {
                 sideBar.state = "hidden"
                 bottomBar.state = "hidden"
             }
+        }
+
+        onStateChanged: {
+            if (main.modelData === undefined) {
+                return
+            }
+            sideBar.buttons.itemAt(0).titleText = modelData.image.iso.replace(/\b(\w)/g, function(s) { return s.toUpperCase() })
+            sideBar.buttons.itemAt(1).titleText = (modelData.image.ev > 0 ? "+" : "") + modelData.image.ev.toString() + ' EV'
+            sideBar.buttons.itemAt(2).titleText = modelData.image.wb.replace(/\b(\w)/g, function(s) { return s.toUpperCase() })
+            sideBar.buttons.itemAt(2).iconSource = "../icons/wb-" + modelData.image.wb.toLowerCase() + '.svg'
         }
     }
 
@@ -225,11 +244,9 @@ Window {
 
         onSetISO: {
             if (value == 0) {
-                main.setValue("iso", "auto")
-                sideBar.buttons.itemAt(0).titleText = qsTr("Auto")
+                main.setValue("image", "iso", "auto")
             } else {
-                main.setValue("iso", value.toString())
-                sideBar.buttons.itemAt(0).titleText = value.toString()
+                main.setValue("image", "iso", value.toString())
             }
         }
     }
@@ -240,8 +257,7 @@ Window {
         width: sideBar.width
 
         onSetEV: {
-            main.setValue("ev", value.toString())
-            sideBar.buttons.itemAt(1).titleText = (value > 0 ? "+" : "") + value.toString() + ' EV'
+            main.setValue("image", "ev", value.toString())
         }
     }
 
@@ -251,9 +267,7 @@ Window {
         width: sideBar.width
 
         onSetWB: {
-            main.setValue('wb', value.toLowerCase())
-            sideBar.buttons.itemAt(2).titleText = value
-            sideBar.buttons.itemAt(2).iconSource = "../icons/wb-" + value.toLowerCase() + '.svg'
+            main.setValue("image", "wb", value.toLowerCase())
         }
     }
 
@@ -263,32 +277,13 @@ Window {
         width: sideBar.width
 
         onSetValue: {
-            main.setValue(key, value.toString())
+            main.setValue("image", key, value.toString())
         }
 
         onStateChanged: {
             image.slider = main.slider
-
-            // FIXME: get from python code
-            currentValues = {
-                sharpness: 0.0,
-                contrast: 0.0,
-                brightness: 50.0,
-                saturation: 0.0,
-                awb_gain_red: 0.0,
-                awb_gain_blue: 0.0,
-                drc: 0.0
-            }
-
-            ranges = {
-                sharpness: [-100.0, 100.0],
-                contrast: [-100.0, 100.0],
-                brightness: [0.0, 100.0],
-                saturation: [-100.0, 100.0],
-                awb_gain_red: [0.0, 8.0],
-                awb_gain_blue: [0.0, 8.0],
-                drc: [0.0, 3.0]
-            }
+            currentValues = main.modelData.image
+            ranges = main.modelData.image._ranges
         }
     }
 
@@ -315,6 +310,10 @@ Window {
         }
     }
 
+    function updateState(area, key, value) {
+        main.modelData[area][key] = value
+    }
+
     Component.onCompleted: {
         // Delay starting of video preview a bit as the event handler may not be attached
         // at load time yet
@@ -323,5 +322,7 @@ Window {
             bottomBar.state = 'visible'
             sideBar.state = 'visible'
         }, 500)
+
+        main.setValue.connect(updateState)
     }
 }

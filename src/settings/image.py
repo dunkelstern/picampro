@@ -1,9 +1,11 @@
+from typing import Dict, Tuple, Union, List
+
 from .proto import SettingsProto
 from pipeline import Pipeline
 
 
 class ImageSettings(SettingsProto):
-    WHITEBALANCES = {
+    WHITEBALANCES: Dict[str, int] = {
         "manual": 0,
         "auto": 1,
         "sunlight": 2,
@@ -16,12 +18,14 @@ class ImageSettings(SettingsProto):
         "horizon": 9
     }
 
-    ISOS = {
+    ISOS: Dict[str, int] = {
         'auto': 0,
         '100': 100,
         '200': 200,
         '400': 400,
-        '800': 800
+        '800': 800,
+        '1600': 1600,
+        '3200': 3200
     }
 
     iso = 'auto'
@@ -35,29 +39,53 @@ class ImageSettings(SettingsProto):
     awb_gain_blue = 0
     drc = 0
 
+    @classmethod
+    def value_ranges(cls) -> Dict[str, Union[Tuple[float, float], List[str]]]:
+        return {
+            'iso':           list(ImageSettings.ISOS.keys()),
+            'ev':            ( -10.0,  10.0),
+            'wb':            list(ImageSettings.WHITEBALANCES.keys()),
+            'sharpness':     (-100.0, 100.0),
+            'contrast':      (-100.0, 100.0),
+            'brightness':    (   0.0, 100.0),
+            'saturation':    (-100.0, 100.0),
+            'awb_gain_red':  (   0.0,   8.0),
+            'awb_gain_blue': (   0.0,   8.0),
+            'drc':           (   0.0,   3.0)
+        }
+
     def validate(self):
+        for attr, rng in ImageSettings.value_ranges().items():
+            value = getattr(self, attr)
+            if isinstance(rng, tuple):
+                rng_min, rng_max = rng
+                if value > rng_max or value < rng_min:
+                    raise ValueError('Attribute {} out of range: {} < {} < {}'.format(attr, rng_min, value, rng_max))
+            elif isinstance(rng, list):
+                if value not in rng:
+                    raise ValueError('Attribute {} has invalid value {}, possible: {}'.format(attr, value, ', '.join(rng)))
         return super().validate()
     
     def parse(self, key: str, value: str):
-        if key == 'iso':
+        if key == 'image:iso':
             self.iso = value
-        elif key == 'ev':
+        elif key == 'image:ev':
             self.ev = int(value)
-        elif key == 'wb':
+        elif key == 'image:wb':
             self.wb = value
-        elif key == 'sharpness':
+        elif key == 'image:sharpness':
             self.sharpness = int(value)
-        elif key == 'contrast':
+        elif key == 'image:contrast':
             self.contrast = int(value)
-        elif key == 'brightness':
+        elif key == 'image:brightness':
             self.brightness = int(value)
-        elif key == 'saturation':
+        elif key == 'image:saturation':
             self.saturation = int(value)
-        elif key == 'wb red':
+        elif key == 'image:awb_gain_red':
             self.awb_gain_red = int(value)
-        elif key == 'wb blue':
+        elif key == 'image:awb_gain_blue':
             self.awb_gain_blue = int(value)
-        elif key == 'drc':
+        elif key == 'image:drc':
             self.drc = int(value)
         super().parse(key, value)
     
