@@ -10,7 +10,7 @@ UnifiedSideButtonBar {
     height: parent.height
     x: parent.width
 
-    buttonTitles: [
+    buttonTitles: [  // FIXME: Get buttons from model state
         "-10 EV",
         "-5 EV",
         "0 EV",

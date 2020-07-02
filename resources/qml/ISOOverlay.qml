@@ -10,12 +10,14 @@ UnifiedSideButtonBar {
     height: parent.height
     x: parent.width
 
-    buttonTitles: [
+    buttonTitles: [  // FIXME: get button titles from model state
+        "Auto",
         "100",
         "200",
         "400",
         "800",
-        "Auto"
+        "1600",
+        "3200",
     ]
 
     buttonIcon:  "../icons/ISO.svg"
@@ -24,20 +26,26 @@ UnifiedSideButtonBar {
     onButtonClicked: {
         switch (buttonID) {
             case 0:
-                setISO(100)
-                break;
-            case 1:
-                setISO(200)
-                break;
-            case 2:
-                setISO(400)
-                break;
-            case 3:
-                setISO(800)
-                break;
-            case 4:
                 setISO(0)
                 break;        
+            case 1:
+                setISO(100)
+                break;
+            case 2:
+                setISO(200)
+                break;
+            case 3:
+                setISO(400)
+                break;
+            case 4:
+                setISO(800)
+                break;
+            case 5:
+                setISO(1600)
+                break;
+            case 6:
+                setISO(3200)
+                break;
             default:
                 break;
         }

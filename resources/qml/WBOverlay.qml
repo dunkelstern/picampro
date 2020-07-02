@@ -11,7 +11,7 @@ SideButtonBar {
     width: parent.width
     x: parent.width
 
-    buttonTitles: [
+    buttonTitles: [  // FIXME: Get buttons from model state
         "Manual",
         "Auto",
         "Sunlight",
