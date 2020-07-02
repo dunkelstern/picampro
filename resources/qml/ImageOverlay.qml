@@ -32,8 +32,8 @@ SideButtonBar {
         "../icons/image-contrast.svg",
         "../icons/image-brightness.svg",
         "../icons/image-saturation.svg",
-        "../icons/image-wb-gain-red.svg",
-        "../icons/image-wb-gain-blue.svg",
+        "../icons/image-awb-gain-red.svg",
+        "../icons/image-awb-gain-blue.svg",
         "../icons/image-drc.svg",
     ]
 
@@ -69,7 +69,7 @@ SideButtonBar {
         slider.from = ranges[activeValue][0]
         slider.to = ranges[activeValue][1]
         slider.value = currentValues[activeValue]
-        slider.iconSource = '../icons/img-' + activeValue +  '.svg'
+        slider.iconSource = '../icons/image-' + activeValue.replace(/_/g, "-") +  '.svg'
         slider.visible = true
 
         slider.onMoved.disconnect(sliderMoved)
