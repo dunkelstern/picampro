@@ -17,9 +17,7 @@ Window {
     signal stopVideoPreview()
     signal startVideoPreview()
 
-    // FIXME: Add button titles as properties to initialize at program start
-
-    title: qsTr("PiCamPro")
+    title: "PiCamPro"
     width: 1024
     height: 600
     color: "black"
