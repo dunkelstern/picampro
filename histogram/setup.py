@@ -10,7 +10,7 @@ module = Extension(
 )
 
 setup(
-    name = 'RPI Display Histogram',
+    name = 'rpi_display_histogram',
     version = '1.0',
     description = 'Create a histogram from display contents',
     packages=setuptools.find_packages(),
