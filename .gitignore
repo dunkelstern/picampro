@@ -3,3 +3,5 @@
 *.py[co]
 *.o
 *.so
+*.egg-info
+*.egg
