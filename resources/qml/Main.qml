@@ -7,6 +7,7 @@ Window {
     id: main
 
     property var modelData: {}
+    property var histogramData: []
 
     property Item activeSideBar: sideBar
     property Item activeBottomBar: bottomBar
@@ -28,6 +29,13 @@ Window {
             return
         }
         sideBar.stateChanged(null)
+    }
+
+    onHistogramDataChanged: {
+        if (main.histogramData === undefined) {
+            return
+        }
+        histogram.histogramData = main.histogramData
     }
 
     SideButtonBar {
@@ -292,6 +300,15 @@ Window {
         width: parent.width - main.activeBottomBar.width - sideBar.width
         height: parent.height - videoWindow.height
         visible: false
+    }
+
+    Histogram {
+        id: histogram
+        x: main.activeBottomBar.x - 160 - 5
+        y: parent.height - height
+        width: 160
+        height: parent.height - videoWindow.height
+        visible: true
     }
 
     Timer {

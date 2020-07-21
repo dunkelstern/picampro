@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include <Python.h>
 #include <bcm_host.h>
@@ -19,7 +20,6 @@ typedef struct {
     DISPMANX_DISPLAY_HANDLE_T display;
     DISPMANX_MODEINFO_T display_info;
     DISPMANX_RESOURCE_HANDLE_T screen_resource;
-    VC_RECT_T rect;
 } ScreenHistogram;
 
 static PyTypeObject ScreenHistogram_type;
@@ -205,9 +205,12 @@ PyObject *ScreenHistogram_capture(PyObject *obj, PyObject *nul) {
         return Py_None;
     }
 
+    VC_RECT_T rect;
+    vc_dispmanx_rect_set(&rect, 0, 0, self->scaled_width, self->scaled_height);
+
     failed = vc_dispmanx_resource_read_data(
         self->screen_resource,
-        &self->roi,
+        &rect,
         self->capture_buffer,
         stride
     );
@@ -218,6 +221,33 @@ PyObject *ScreenHistogram_capture(PyObject *obj, PyObject *nul) {
 
     self->capture_ok = true;
     return Py_None;
+}
+PyObject *build_histogram(ScreenHistogram *self, uint32_t *pixel_sum, uint8_t num_bins) {
+    PyObject* histogram = PyList_New(num_bins);
+
+    // find max
+    uint32_t max = 0;
+    for(uint32_t i = 0; i < num_bins; i++) {
+        if (pixel_sum[i] > max) {
+            max = pixel_sum[i];
+        }
+    }
+
+    for(uint8_t i = 0; i < num_bins; i++) {
+        int result = PyList_SetItem(
+            histogram,
+            i,
+            PyLong_FromUnsignedLong(
+                (int)(logf(pixel_sum[i]+1) / logf(max+1) * 100.0)
+            )
+        );
+        if (result < 0) {
+            // Exception already set by SetItem call
+            return Py_None;
+        }
+    }
+
+    return histogram;
 }
 
 PyObject *ScreenHistogram_fast_luminance(PyObject *obj, PyObject *args, PyObject *kwargs) {
@@ -230,45 +260,22 @@ PyObject *ScreenHistogram_fast_luminance(PyObject *obj, PyObject *args, PyObject
     stride += (stride % 64 > 0) ? 64 - (stride % 64) : 0; // make it multiple of 64 bytes
 
     uint32_t pixel_sum[num_bins + 1];
-    PyObject* histogram = PyList_New(num_bins);
-
     memset(&pixel_sum, 0, sizeof(uint32_t) * num_bins);
     uint8_t denominator = ceilf(255.0 / (float)num_bins);
 
     // count pixels
-    for(uint32_t y = 0; y < self->scaled_height; y++) {
-        for(uint32_t x = 0; x < self->scaled_width; x++) {
+    for(uint32_t y = 0; y < self->roi.height; y++) {
+        for(uint32_t x = 0; x < self->roi.width; x++) {
             uint8_t red = self->capture_buffer[y * stride + x * 4];
             uint8_t green = self->capture_buffer[y * stride + x * 4 + 1];
             uint8_t blue = self->capture_buffer[y * stride + x * 4 + 2];
             uint16_t lum = (red + red + red + blue + green + green + green + green) >> 3;
-            pixel_sum[lum / denominator]++;
+            uint8_t idx = lum / denominator;
+            pixel_sum[idx]++;
         }
     }
 
-    // find max
-    uint32_t max = 0;
-    for (uint8_t i = 0; i < num_bins; i++) {
-        if (max < pixel_sum[i]) {
-            max = pixel_sum[i];
-        }
-    }
-
-    for(uint8_t i = 0; i < num_bins; i++) {
-        int result = PyList_SetItem(
-            histogram,
-            i,
-            PyLong_FromUnsignedLong(
-                pixel_sum[i] / (max / 100)
-            )
-        );
-        if (result < 0) {
-            // Exception already set by SetItem call
-            return Py_None;
-        }
-    }
-
-    return histogram;
+    return build_histogram(self, pixel_sum, num_bins);
 }
 
 // reverses the rgb gamma
@@ -304,14 +311,13 @@ PyObject *ScreenHistogram_luminance(PyObject *obj, PyObject *args, PyObject *kwa
     stride += (stride % 64 > 0) ? 64 - (stride % 64) : 0; // make it multiple of 64 bytes
 
     uint32_t pixel_sum[num_bins + 1];
-    PyObject* histogram = PyList_New(num_bins);
 
     memset(&pixel_sum, 0, sizeof(uint32_t) * num_bins);
     uint8_t denominator = ceilf(255.0 / (float)num_bins);
 
     // count pixels
-    for(uint32_t y = 0; y < self->scaled_height; y++) {
-        for(uint32_t x = 0; x < self->scaled_width; x++) {
+    for(uint32_t y = 0; y < self->roi.height; y++) {
+        for(uint32_t x = 0; x < self->roi.width; x++) {
             uint8_t red = self->capture_buffer[y * stride + x * 4];
             uint8_t green = self->capture_buffer[y * stride + x * 4 + 1];
             uint8_t blue = self->capture_buffer[y * stride + x * 4 + 2];
@@ -319,29 +325,7 @@ PyObject *ScreenHistogram_luminance(PyObject *obj, PyObject *args, PyObject *kwa
         }
     }
 
-    // find max
-    uint32_t max = 0;
-    for (uint8_t i = 0; i < num_bins; i++) {
-        if (max < pixel_sum[i]) {
-            max = pixel_sum[i];
-        }
-    }
-
-    for(uint8_t i = 0; i < num_bins; i++) {
-        int result = PyList_SetItem(
-            histogram,
-            i,
-            PyLong_FromUnsignedLong(
-                pixel_sum[i] / (max / 100)
-            )
-        );
-        if (result < 0) {
-            // Exception already set by SetItem call
-            return Py_None;
-        }
-    }
-
-    return histogram;
+    return build_histogram(self, pixel_sum, num_bins);
 }
 
 PyObject *ScreenHistogram_red(PyObject *obj, PyObject *args, PyObject *kwargs) {
@@ -354,42 +338,18 @@ PyObject *ScreenHistogram_red(PyObject *obj, PyObject *args, PyObject *kwargs) {
     stride += (stride % 64 > 0) ? 64 - (stride % 64) : 0; // make it multiple of 64 bytes
 
     uint32_t pixel_sum[num_bins + 1];
-    PyObject* histogram = PyList_New(num_bins);
-
     memset(&pixel_sum, 0, sizeof(uint32_t) * num_bins + 1);
     uint8_t denominator = ceilf(255.0 / (float)num_bins);
 
     // count pixels
-    for(uint32_t y = 0; y < self->scaled_height; y++) {
-        for(uint32_t x = 0; x < self->scaled_width; x++) {
+    for(uint32_t y = 0; y < self->roi.height; y++) {
+        for(uint32_t x = 0; x < self->roi.width; x++) {
             uint8_t red = self->capture_buffer[y * stride + x * 4];
             pixel_sum[red / denominator]++;
         }
     }
 
-    // find max
-    uint32_t max = 0;
-    for (uint8_t i = 0; i < num_bins; i++) {
-        if (max < pixel_sum[i]) {
-            max = pixel_sum[i];
-        }
-    }
-
-    for(uint8_t i = 0; i < num_bins; i++) {
-        int result = PyList_SetItem(
-            histogram,
-            i,
-            PyLong_FromUnsignedLong(
-                pixel_sum[i] / (max / 100)
-            )
-        );
-        if (result < 0) {
-            // Exception already set by SetItem call
-            return Py_None;
-        }
-    }
-
-    return histogram;
+    return build_histogram(self, pixel_sum, num_bins);
 }
 
 PyObject *ScreenHistogram_green(PyObject *obj, PyObject *args, PyObject *kwargs) {
@@ -402,42 +362,18 @@ PyObject *ScreenHistogram_green(PyObject *obj, PyObject *args, PyObject *kwargs)
     stride += (stride % 64 > 0) ? 64 - (stride % 64) : 0; // make it multiple of 64 bytes
 
     uint32_t pixel_sum[num_bins + 1];
-    PyObject* histogram = PyList_New(num_bins);
-
     memset(&pixel_sum, 0, sizeof(uint32_t) * num_bins + 1);
     uint8_t denominator = ceilf(255.0 / (float)num_bins);
 
     // count pixels
-    for(uint32_t y = 0; y < self->scaled_height; y++) {
-        for(uint32_t x = 0; x < self->scaled_width; x++) {
+    for(uint32_t y = 0; y < self->roi.height; y++) {
+        for(uint32_t x = 0; x < self->roi.width; x++) {
             uint8_t green = self->capture_buffer[y * stride + x * 4 + 1];
             pixel_sum[green / denominator]++;
         }
     }
 
-    // find max
-    uint32_t max = 0;
-    for (uint8_t i = 0; i < num_bins; i++) {
-        if (max < pixel_sum[i]) {
-            max = pixel_sum[i];
-        }
-    }
-
-    for(uint8_t i = 0; i < num_bins; i++) {
-        int result = PyList_SetItem(
-            histogram,
-            i,
-            PyLong_FromUnsignedLong(
-                pixel_sum[i] / (max / 100)
-            )
-        );
-        if (result < 0) {
-            // Exception already set by SetItem call
-            return Py_None;
-        }
-    }
-
-    return histogram;
+    return build_histogram(self, pixel_sum, num_bins);
 }
 
 PyObject *ScreenHistogram_blue(PyObject *obj, PyObject *args, PyObject *kwargs) {
@@ -450,42 +386,18 @@ PyObject *ScreenHistogram_blue(PyObject *obj, PyObject *args, PyObject *kwargs) 
     stride += (stride % 64 > 0) ? 64 - (stride % 64) : 0; // make it multiple of 64 bytes
 
     uint32_t pixel_sum[num_bins + 1];
-    PyObject* histogram = PyList_New(num_bins);
-
     memset(&pixel_sum, 0, sizeof(uint32_t) * num_bins + 1);
     uint8_t denominator = ceilf(255.0 / (float)num_bins);
 
     // count pixels
-    for(uint32_t y = 0; y < self->scaled_height; y++) {
-        for(uint32_t x = 0; x < self->scaled_width; x++) {
+    for(uint32_t y = 0; y < self->roi.height; y++) {
+        for(uint32_t x = 0; x < self->roi.width; x++) {
             uint8_t blue = self->capture_buffer[y * stride + x * 4 + 2];
             pixel_sum[blue / denominator]++;
         }
     }
 
-    // find max
-    uint32_t max = 0;
-    for (uint8_t i = 0; i < num_bins; i++) {
-        if (max < pixel_sum[i]) {
-            max = pixel_sum[i];
-        }
-    }
-
-    for(uint8_t i = 0; i < num_bins; i++) {
-        int result = PyList_SetItem(
-            histogram,
-            i,
-            PyLong_FromUnsignedLong(
-                pixel_sum[i] / (max / 100)
-            )
-        );
-        if (result < 0) {
-            // Exception already set by SetItem call
-            return Py_None;
-        }
-    }
-
-    return histogram;
+    return build_histogram(self, pixel_sum, num_bins);
 }
 
 struct PyMethodDef methods[] = {

@@ -3,6 +3,9 @@ from contextlib import contextmanager
 
 import sys
 
+from PySide2.QtCore import QTimer
+from rpi_display_histogram import ScreenHistogram
+
 import gi
 gi.require_version('Gst', '1.0')
 gi.require_version('GstBase', '1.0')
@@ -24,6 +27,9 @@ class Pipeline:
 
     def __init__(self, settings: 'Settings'):
         self.settings = settings
+        self.histogram_timer = None
+        self.histogram = None
+        self.histogram_update_callback = None
         self.re_init()
 
     def re_init(self):
@@ -126,6 +132,14 @@ class Pipeline:
             self.re_init()
         self.pipeline.set_state(Gst.State.PLAYING)
 
+        if self.histogram_timer:
+            self.histogram_timer.start()
+        else:
+            self.histogram_timer = QTimer()
+            self.histogram_timer.timeout.connect(self.update_histogram)
+            self.histogram_timer.start(100)
+
+
     def start_recording(self):
         """
         Start recording to disk, keeps the preview and streaming running
@@ -148,6 +162,8 @@ class Pipeline:
         self.pipeline.set_state(Gst.State.NULL)
         self.pipeline = None
         self.settings.remove_state()
+        if self.histogram_timer:
+            self.histogram_timer.stop()
 
     @contextmanager
     def offline_edit(self):
@@ -166,6 +182,19 @@ class Pipeline:
             yield (self, Gst)
         finally:
             self.pipeline.set_state(state)
+
+    def update_histogram(self):
+        if self.histogram is None:
+            self.histogram = ScreenHistogram()
+            self.histogram.scaled_width = int(self.histogram.screen_width / 4)
+            self.histogram.scaled_height = int(self.histogram.screen_height / 4)
+            self.histogram.roi = (0, 0, int(904 / 4) - 1, int(508 / 4) - 1)  # FIXME: make dependent on screen size
+            # self.histogram.roi = (0, 0, 904, 508)  # FIXME: make dependent on screen size
+        self.histogram.capture()
+        data = self.histogram.fast_luminance_histogram(num_bins=32)
+        if self.histogram_update_callback and callable(self.histogram_update_callback):
+            self.histogram_update_callback(data)
+
 
     def _on_message(self, bus, message):
         """
