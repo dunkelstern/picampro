@@ -186,10 +186,9 @@ class Pipeline:
     def update_histogram(self):
         if self.histogram is None:
             self.histogram = ScreenHistogram()
-            self.histogram.scaled_width = int(self.histogram.screen_width / 4)
-            self.histogram.scaled_height = int(self.histogram.screen_height / 4)
-            self.histogram.roi = (0, 0, int(904 / 4) - 1, int(508 / 4) - 1)  # FIXME: make dependent on screen size
-            # self.histogram.roi = (0, 0, 904, 508)  # FIXME: make dependent on screen size
+            self.histogram.scaled_width = int(self.histogram.screen_width / 6)
+            self.histogram.scaled_height = int(self.histogram.screen_height / 6)
+            self.histogram.roi = (0, 0, int(904 / 6) - 1, int(508 / 6) - 1)  # FIXME: make dependent on screen size
         self.histogram.capture()
         data = self.histogram.fast_luminance_histogram(num_bins=32)
         if self.histogram_update_callback and callable(self.histogram_update_callback):

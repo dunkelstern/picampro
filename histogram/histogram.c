@@ -222,14 +222,34 @@ PyObject *ScreenHistogram_capture(PyObject *obj, PyObject *nul) {
     self->capture_ok = true;
     return Py_None;
 }
-PyObject *build_histogram(ScreenHistogram *self, uint32_t *pixel_sum, uint8_t num_bins) {
+PyObject *build_histogram(ScreenHistogram *self, float *pixel_sum, uint8_t num_bins) {
     PyObject* histogram = PyList_New(num_bins);
 
     // find max
-    uint32_t max = 0;
+    float max = 0;
     for(uint32_t i = 0; i < num_bins; i++) {
         if (pixel_sum[i] > max) {
             max = pixel_sum[i];
+        }
+    }
+
+    for(uint32_t i = 0; i < num_bins; i++) {
+        pixel_sum[i] = (logf(pixel_sum[i] + 1) / logf(max + 1) * 100.0);
+    }
+
+    // find min
+    float min = 200.0;
+    for(uint32_t i = 0; i < num_bins; i++) {
+        if ((pixel_sum[i] > 10) && (pixel_sum[i] < min)) {
+            min = pixel_sum[i];
+        }
+    }
+    min -= 10;
+
+    // make variation more visible
+    for(uint32_t i = 0; i < num_bins; i++) {
+        if (pixel_sum[i] > min) {
+            pixel_sum[i] = (pixel_sum[i] - min) * (100.0 / (100.0 - min));
         }
     }
 
@@ -237,9 +257,7 @@ PyObject *build_histogram(ScreenHistogram *self, uint32_t *pixel_sum, uint8_t nu
         int result = PyList_SetItem(
             histogram,
             i,
-            PyLong_FromUnsignedLong(
-                (int)(logf(pixel_sum[i]+1) / logf(max+1) * 100.0)
-            )
+            PyLong_FromUnsignedLong((int)pixel_sum[i])
         );
         if (result < 0) {
             // Exception already set by SetItem call
@@ -259,8 +277,8 @@ PyObject *ScreenHistogram_fast_luminance(PyObject *obj, PyObject *args, PyObject
     uint32_t stride = self->scaled_width * 4;
     stride += (stride % 64 > 0) ? 64 - (stride % 64) : 0; // make it multiple of 64 bytes
 
-    uint32_t pixel_sum[num_bins + 1];
-    memset(&pixel_sum, 0, sizeof(uint32_t) * num_bins);
+    float pixel_sum[num_bins + 1];
+    memset(&pixel_sum, 0, sizeof(float) * num_bins);
     uint8_t denominator = ceilf(255.0 / (float)num_bins);
 
     // count pixels
@@ -310,9 +328,8 @@ PyObject *ScreenHistogram_luminance(PyObject *obj, PyObject *args, PyObject *kwa
     uint32_t stride = self->scaled_width * 4;
     stride += (stride % 64 > 0) ? 64 - (stride % 64) : 0; // make it multiple of 64 bytes
 
-    uint32_t pixel_sum[num_bins + 1];
-
-    memset(&pixel_sum, 0, sizeof(uint32_t) * num_bins);
+    float pixel_sum[num_bins + 1];
+    memset(&pixel_sum, 0, sizeof(float) * num_bins);
     uint8_t denominator = ceilf(255.0 / (float)num_bins);
 
     // count pixels
@@ -337,8 +354,8 @@ PyObject *ScreenHistogram_red(PyObject *obj, PyObject *args, PyObject *kwargs) {
     uint32_t stride = self->scaled_width * 4;
     stride += (stride % 64 > 0) ? 64 - (stride % 64) : 0; // make it multiple of 64 bytes
 
-    uint32_t pixel_sum[num_bins + 1];
-    memset(&pixel_sum, 0, sizeof(uint32_t) * num_bins + 1);
+    float pixel_sum[num_bins + 1];
+    memset(&pixel_sum, 0, sizeof(float) * num_bins + 1);
     uint8_t denominator = ceilf(255.0 / (float)num_bins);
 
     // count pixels
@@ -361,8 +378,8 @@ PyObject *ScreenHistogram_green(PyObject *obj, PyObject *args, PyObject *kwargs)
     uint32_t stride = self->scaled_width * 4;
     stride += (stride % 64 > 0) ? 64 - (stride % 64) : 0; // make it multiple of 64 bytes
 
-    uint32_t pixel_sum[num_bins + 1];
-    memset(&pixel_sum, 0, sizeof(uint32_t) * num_bins + 1);
+    float pixel_sum[num_bins + 1];
+    memset(&pixel_sum, 0, sizeof(float) * num_bins + 1);
     uint8_t denominator = ceilf(255.0 / (float)num_bins);
 
     // count pixels
@@ -385,8 +402,8 @@ PyObject *ScreenHistogram_blue(PyObject *obj, PyObject *args, PyObject *kwargs) 
     uint32_t stride = self->scaled_width * 4;
     stride += (stride % 64 > 0) ? 64 - (stride % 64) : 0; // make it multiple of 64 bytes
 
-    uint32_t pixel_sum[num_bins + 1];
-    memset(&pixel_sum, 0, sizeof(uint32_t) * num_bins + 1);
+    float pixel_sum[num_bins + 1];
+    memset(&pixel_sum, 0, sizeof(float) * num_bins + 1);
     uint8_t denominator = ceilf(255.0 / (float)num_bins);
 
     // count pixels
