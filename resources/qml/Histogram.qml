@@ -4,6 +4,15 @@ Item {
     id: histogram
     property var histogramData
 
+    Rectangle {
+        anchors.top: parent.top
+        anchors.topMargin: 5
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        width: 5 * histogramData.length
+        color: Constants.bgColor
+    }
+
     Row {
         spacing: 1
         anchors.top: parent.top
