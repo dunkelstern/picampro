@@ -26,23 +26,39 @@ def set_value(area, key, value):
 def button_pressed(key):
     print('button', key)
     if key == 'stop':
-        pipeline.preview()
+        pipeline.stop_recording()
+        pipeline.stop_streaming()
     elif key == 'rec':
-        pipeline.start_recording()
+        # TODO: change icon/color/whatever
+        if pipeline.recording:
+            pipeline.stop_recording()
+        else:
+            pipeline.start_recording()
     elif key == 'stream':
-        pipeline.start_streaming()
+        # TODO: change icon/color/whatever
+        if pipeline.streaming:
+            pipeline.stop_streaming()
+        else:
+            pipeline.start_streaming()
     elif key == 'mic':
-        pass
+        # TODO: change icon/color/whatever
+        if pipeline.muted:
+            pipeline.unmute_audio()
+        else:
+            pipeline.mute_audio()
+    elif key == 'settings':
+        if not pipeline.recording and not pipeline.streaming:
+            root.showSettings()
 
 @Slot()
-def start_preview():
-    print('start preview')
-    pipeline.preview()
+def start_video():
+    print('start pipeline')
+    pipeline.start_pipeline()
 
 @Slot()
-def stop_preview():
-    print('stop preview')
-    pipeline.stop()
+def stop_video():
+    print('stop pipeline')
+    pipeline.stop_pipeline()
 
 def update_histogram(data):
     root.setProperty('histogramData', data)
@@ -67,8 +83,8 @@ if __name__ == "__main__":
     # Connect slots
     root.setValue.connect(set_value)
     root.buttonPressed.connect(button_pressed)
-    root.stopVideoPreview.connect(stop_preview)
-    root.startVideoPreview.connect(start_preview)
+    root.stopVideo.connect(stop_video)
+    root.startVideo.connect(start_video)
 
     # Transfer settings over
     root.setProperty('modelData', settings.serialize())

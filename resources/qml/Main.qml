@@ -16,14 +16,19 @@ Window {
 
     signal setValue(string area, string key, string value)
     signal buttonPressed(string key)
-    signal stopVideoPreview()
-    signal startVideoPreview()
+    signal stopVideo()
+    signal startVideo()
 
     title: "PiCamPro"
     width: 1024
     height: 600
     color: "black"
     visible: true
+
+    function showSettings() {
+        console.log("Show settings")
+        main.stopVideo()
+    }
 
     onModelDataChanged: {
         if (main.modelData === undefined) {
@@ -101,7 +106,7 @@ Window {
                     // Stop Video preview
                     main.activeSideBar = sideBar
                     main.activeBottomBar = bottomBar
-                    main.stopVideoPreview()
+                    main.buttonPressed("settings")
                     // TODO: Show settings screen
                     break;
                 default:
@@ -357,7 +362,7 @@ Window {
         // Delay starting of video preview a bit as the event handler may not be attached
         // at load time yet
         timer.setTimeout(function() {
-            main.startVideoPreview()
+            main.startVideo()
             bottomBar.state = 'visible'
             sideBar.state = 'visible'
         }, 500)

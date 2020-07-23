@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING
 from contextlib import contextmanager
 
+from time import sleep
+
 import sys
 import random
 
@@ -18,6 +20,8 @@ if TYPE_CHECKING:
 
 Gst.init(None)
 
+from .record_bin import RecordingBin
+
 
 class Pipeline:
     audio_source = None       # TODO: audio source
@@ -28,14 +32,25 @@ class Pipeline:
 
     def __init__(self, settings: 'Settings'):
         self.settings = settings
+        # Status
+        self.recording = False
+        self.streaming = False
+        self.previewing = False
+        self.muted = True
+
+        # Histogram
         self.histogram_timer = None
         self.histogram = None
         self.histogram_update_callback = None
+
+        # VU Meter
         self.vu_update_callback = None
         self.vuLeft = 0
         self.peakLeft = 0
         self.vuRight = 0
         self.peakRight = 0
+
+        # build pipeline
         self.re_init()
 
     def re_init(self):
@@ -51,11 +66,17 @@ class Pipeline:
         self.video_caps = Gst.Caps.from_string("video/x-h264, width=1920, height=1080, framerate=30/1,profile=high")
         pipeline_items.append(self.video_caps)
 
-        self.video_caps_filter = Gst.ElementFactory.make("capsfilter", "filter")
+        self.video_caps_filter = Gst.ElementFactory.make("capsfilter", "video_filter")
         pipeline_items.append(self.video_caps_filter)
 
         self.h264_parser = Gst.ElementFactory.make("h264parse", "videoparse")
         pipeline_items.append(self.h264_parser)
+
+        self.h264_caps = Gst.Caps.from_string("video/x-h264, stream-format=avc, alignment=au, framerate=30/1")
+        pipeline_items.append(self.h264_caps)
+
+        self.h264_caps_filter = Gst.ElementFactory.make("capsfilter", "h264_filter")
+        pipeline_items.append(self.h264_caps_filter)
 
         self.video_tee  = Gst.ElementFactory.make('tee', 'video_tee')
         pipeline_items.append(self.video_tee)
@@ -71,22 +92,26 @@ class Pipeline:
             sys.exit(1)
 
         # TODO: add queue -> flvmux -> rtmpsink
-        # TODO: add queue -> matroskamux -> filesink
 
         # Set video caps (frame size, etc.)
         self.video_caps_filter.set_property("caps", self.video_caps)
+        self.h264_caps_filter.set_property("caps", self.h264_caps)
 
         # Video source properties
         self.video_source.set_property("preview", 1)
+        self.previewing = True
         self.video_source.set_property("fullscreen", 0)
         self.video_source.set_property("preview-x", 0)
         self.video_source.set_property("preview-y", 0)
         self.video_source.set_property("preview-w", 904)  # FIXME: make dependend on screen size
         self.video_source.set_property("preview-h", 508)  # FIXME: make dependend on screen size
         self.video_source.set_property("inline-headers", 1)
+        self.video_source.set_property("use-stc", True)
+        self.video_source.set_property("bitrate", 10000000) # FIXME: Remove this
 
         # Make sure the video pipeline always runs sync
         self.video_fake_sink.set_property('sync', True)
+        self.pipeline.set_property("message-forward", True)
 
         # TODO: audio
         # Encoder: voaacenc
@@ -97,13 +122,15 @@ class Pipeline:
             self.video_source,
             self.video_caps_filter,
             self.h264_parser,
+            self.h264_caps_filter,
             self.video_tee,
             self.video_fake_queue,
             self.video_fake_sink
         )
         self.video_source.link(self.video_caps_filter)
         self.video_caps_filter.link(self.h264_parser)
-        self.h264_parser.link(self.video_tee)
+        self.h264_parser.link(self.h264_caps_filter)
+        self.h264_caps_filter.link(self.video_tee)
 
         # Tee has dynamic pads, so request one for the fake sink
         self.video_src_pad_template = Gst.PadTemplate.new_with_gtype(
@@ -128,14 +155,75 @@ class Pipeline:
         # now apply all settings to the stream
         self.settings.apply(self)
 
-    def preview(self):
+    def start_recording(self):
         """
-        Start the video preview, calling this while recording or streaming will
-        switch to preview mode only and stop the encoder
+        Start recording to disk, keeps the preview and streaming running
         """
-        # FIXME: add fake sink when starting preview and disconnect recorders and streamers
+        if self.recording is True:
+            return
+
+        # New recording bin
+        self.record_bin = RecordingBin()
+        self.pipeline.add(self.record_bin)
+        self.record_bin.sync_state_with_parent()
+
+        # Tee has dynamic pads, so request one for the recording sink
+        video_record_src_pad = self.video_tee.request_pad(self.video_src_pad_template)
+        video_record_src_pad.link(self.record_bin.get_static_pad('sink'))
+
+        self.recording = True
+
+
+    def stop_recording(self):
+        """
+        Stop recording to disk
+        """
+        if self.recording is False:
+            return
+        
+        self.record_bin.get_static_pad('sink').get_peer().add_probe(Gst.PadProbeType.BLOCK, self._stop_recording_cb, None)
+
+    def _stop_recording_cb(self, pad, info, data):
+        # unlink the pad
+        peer = pad.get_peer()
+        if peer is None:
+            return Gst.PadProbeReturn.REMOVE # Already unlinked
+        pad.unlink(peer)
+ 
+        self.video_tee.release_request_pad(pad)
+
+        # send EOS downstream
+        self.record_bin.stop()
+
+        # add event listener to destroy the dangling part of the pipeline on EOS
+        return Gst.PadProbeReturn.REMOVE
+
+    def _remove_recorder(self):
+        if self.record_bin is None:
+            return
+        self.record_bin.set_state(Gst.State.NULL)
+
+        self.pipeline.remove(self.record_bin)
+        self.record_bin = None
+        self.recording = False
+
+    def start_streaming(self):
+        """
+        Start streaming to a streaming server, keeps preview and recording running
+        """
+        # TODO: start streaming
+        pass
+
+    def stop_streaming(self):
+        """
+        Stop streaming
+        """
+        pass
+
+    def start_pipeline(self):
         if self.pipeline is None:
             self.re_init()
+
         self.pipeline.set_state(Gst.State.PLAYING)
 
         if self.histogram_timer:
@@ -145,31 +233,32 @@ class Pipeline:
             self.histogram_timer.timeout.connect(self.update_histogram)
             self.histogram_timer.start(100)
 
-
-    def start_recording(self):
-        """
-        Start recording to disk, keeps the preview and streaming running
-        """
-        # TODO: start recording
-        pass
-
-    def start_streaming(self):
-        """
-        Start streaming to a streaming server, keeps preview and recording running
-        """
-        # TODO: start streaming
-        pass
-
-    def stop(self):
+    def stop_pipeline(self):
         """
         Stop the pipeline.
         This will disable the preview
         """
+        if self.histogram_timer:
+            self.histogram_timer.stop()
+
+        self.stop_recording()
+        self.stop_streaming()
+
         self.pipeline.set_state(Gst.State.NULL)
         self.pipeline = None
         self.settings.remove_state()
-        if self.histogram_timer:
-            self.histogram_timer.stop()
+
+    def mute_audio(self):
+        """
+        Mute audio channels
+        """
+        pass
+
+    def unmute_audio(self):
+        """
+        Un-Mute audio channels
+        """
+        pass
 
     @contextmanager
     def offline_edit(self):
@@ -226,21 +315,32 @@ class Pipeline:
         GStreamer message handler
         """
         t = message.type
+        # print('message', t)
         if t == Gst.MessageType.EOS:
             self.pipeline.set_state(Gst.State.NULL)
         elif t == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
             print("Error: %s" % err, debug)
             self.pipeline.set_state(Gst.State.NULL)
+        elif t == Gst.MessageType.ELEMENT:
+            data = message.get_structure()
+            if data.has_name("GstBinForwarded"):
+                forwarded_message = data.get_value("message")
+                if forwarded_message.type == Gst.MessageType.EOS:
+                    self._remove_recorder()  # FIXME: Check if we have to remove recorder or streamer
+                # print('forwarded', forwarded_message.type)
 
     def _on_sync_message(self, bus, message):
         """
         Gstreamer sync message handler
         """
+        # print('sync message', message.type)
         struct = message.get_structure()
         if not struct:
             return
-        message_name = struct.get_name()
+        if struct.has_name("GstBinForwarded"):
+            forwarded_message = struct.get_value("message")
+            # print('sync forwarded', forwarded_message.type)
         # if message_name == "prepare-xwindow-id":
         #     # Assign the viewport
         #     imagesink = message.src
