@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 from contextlib import contextmanager
 
 import sys
+import random
 
 from PySide2.QtCore import QTimer
 from rpi_display_histogram import ScreenHistogram
@@ -199,6 +200,24 @@ class Pipeline:
         if self.histogram_update_callback and callable(self.histogram_update_callback):
             self.histogram_update_callback(data)
         if self.vu_update_callback and callable(self.vu_update_callback):
+            self.vuLeft += random.randint(-15, 15)
+            self.vuRight += random.randint(-15, 15)
+            if self.vuLeft > 100:
+                self.vuLeft = 100
+            elif self.vuLeft < 0:
+                self.vuLeft = 0
+            if self.vuRight > 100:
+                self.vuRight = 100
+            elif self.vuRight < 0:
+                self.vuRight = 0
+            if self.vuLeft >= self.peakLeft:
+                self.peakLeft = self.vuLeft
+            else:
+                self.peakLeft -= 2
+            if self.vuRight >= self.peakRight:
+                self.peakRight = self.vuRight
+            else:
+                self.peakRight -= 2
             self.vu_update_callback([self.vuLeft / 100.0, self.peakLeft / 100.0, self.vuRight / 100.0, self.peakRight / 100.0])
 
 
