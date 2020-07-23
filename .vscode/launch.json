@@ -12,7 +12,20 @@
             "console": "integratedTerminal",
             "env": {
                 "QT_QPA_PLATFORM": "eglfs",
-                "QT_IM_MODULE": "qtvirtualkeyboard"
+                "QT_IM_MODULE": "qtvirtualkeyboard",
+                "GST_DEBUG": "*:2"
+            }
+        },
+        {
+            "name": "GUI Gstreamer debug",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceRoot}/src/main.py",
+            "console": "integratedTerminal",
+            "env": {
+                "QT_QPA_PLATFORM": "eglfs",
+                "QT_IM_MODULE": "qtvirtualkeyboard",
+                "GST_DEBUG": "*:5,h264parse:4,codecparsers_h264:4,GST_MEMORY:0,GST_SCHEDULING:0,GST_CLOCK:4,basesink:4,tee:4,basesrc:4,basetransform:4,adapter:4,baseparse:4,default:4,query:4,GST_PERFORMANCE:4,bin:4"
             }
         }
     ]
