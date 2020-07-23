@@ -47,10 +47,14 @@ def stop_preview():
 def update_histogram(data):
     root.setProperty('histogramData', data)
 
+def update_vumeter(data):
+    root.setProperty('vuMeterData', data)
+
 if __name__ == "__main__":
     settings = Settings()
     pipeline = Pipeline(settings)
     pipeline.histogram_update_callback = update_histogram
+    pipeline.vu_update_callback = update_vumeter
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
     engine.load(os.path.join(os.path.dirname(__file__), "../resources/qml/Main.qml"))
@@ -69,5 +73,6 @@ if __name__ == "__main__":
     # Transfer settings over
     root.setProperty('modelData', settings.serialize())
     root.setProperty('histogramData', [0] * 32)
+    root.setProperty('vuMeterData', [0] * 4)
 
     sys.exit(app.exec_())

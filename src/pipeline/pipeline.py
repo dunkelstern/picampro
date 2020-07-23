@@ -30,6 +30,11 @@ class Pipeline:
         self.histogram_timer = None
         self.histogram = None
         self.histogram_update_callback = None
+        self.vu_update_callback = None
+        self.vuLeft = 0
+        self.peakLeft = 0
+        self.vuRight = 0
+        self.peakRight = 0
         self.re_init()
 
     def re_init(self):
@@ -193,6 +198,8 @@ class Pipeline:
         data = self.histogram.fast_luminance_histogram(num_bins=32)
         if self.histogram_update_callback and callable(self.histogram_update_callback):
             self.histogram_update_callback(data)
+        if self.vu_update_callback and callable(self.vu_update_callback):
+            self.vu_update_callback([self.vuLeft / 100.0, self.peakLeft / 100.0, self.vuRight / 100.0, self.peakRight / 100.0])
 
 
     def _on_message(self, bus, message):

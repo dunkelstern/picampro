@@ -8,6 +8,7 @@ Window {
 
     property var modelData: {}
     property var histogramData: []
+    property var vuMeterData: []
 
     property Item activeSideBar: sideBar
     property Item activeBottomBar: bottomBar
@@ -36,6 +37,16 @@ Window {
             return
         }
         histogram.histogramData = main.histogramData
+    }
+
+    onVuMeterDataChanged: {
+        if (main.vuMeterData === undefined) {
+            return
+        }
+        vuMeter.vuLeft = main.vuMeterData[0]
+        vuMeter.peakLeft = main.vuMeterData[1]
+        vuMeter.vuRight = main.vuMeterData[2]
+        vuMeter.peakRight = main.vuMeterData[3]
     }
 
     SideButtonBar {
@@ -300,14 +311,27 @@ Window {
         width: parent.width - main.activeBottomBar.width - sideBar.width
         height: parent.height - videoWindow.height
         visible: false
+        onVisibleChanged: {
+            histogram.visible = !slider.visible
+            vuMeter.visible = !slider.visible
+        }
     }
 
     Histogram {
         id: histogram
-        x: main.activeBottomBar.x - 160 - 5
+        x: vuMeter.x + vuMeter.width
         y: parent.height - height
         width: 160
         height: parent.height - videoWindow.height
+        visible: true
+    }
+
+    VUMeter {
+        id: vuMeter
+        x: 0
+        y: parent.height - height
+        height: parent.height - videoWindow.height
+        width: 250
         visible: true
     }
 
